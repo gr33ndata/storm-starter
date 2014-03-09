@@ -132,21 +132,21 @@ public class TweetsLanguages {
     builder.setBolt(langcountId, new LanguageCount(), 12).fieldsGrouping(langId, new Fields("language"));
   }
 
-  public void run(String mode) throws Exception {
-    if (mode == "local") {
+  public void run() throws Exception {
+    String mode = topologyConfig.get("mode").toString();
+    if (mode.equals("local")) {
       StormRunner.runTopologyLocally(builder.createTopology(), topologyName, topologyConfig, runtimeInSeconds);
     }
-    else if (mode == "cluster") {
+    else if (mode.equals("cluster")) {
       topologyConfig.setNumWorkers(3);
       StormSubmitter.submitTopology(topologyName, topologyConfig, builder.createTopology());
+    }
+    else {
+      System.out.println("Unknown mode: " + mode);
     }
   }
 
   public static void main(String[] args) throws Exception {
-    String mode = (args != null && args.length > 0) ? args[0] : "local";
-    if (mode != "local" && mode != "cluster") {
-      throw new Exception("Parameter mode must be local or cluster");
-    }
-    new TweetsLanguages().run(mode);
+    new TweetsLanguages().run();
   }
 }
