@@ -10,10 +10,6 @@ import backtype.storm.utils.Utils;
 
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.io.InputStream;
-import java.io.FileNotFoundException;
-import java.io.FileInputStream;
-import java.io.File;
 
 import twitter4j.*;
 import twitter4j.FilterQuery;
@@ -23,8 +19,6 @@ import twitter4j.StatusDeletionNotice;
 import twitter4j.StatusListener;
 import twitter4j.TwitterStream;
 import twitter4j.TwitterStreamFactory;
-
-import org.yaml.snakeyaml.Yaml;
 
 public class TwitterSpout extends BaseRichSpout {
   SpoutOutputCollector _collector;
@@ -36,21 +30,11 @@ public class TwitterSpout extends BaseRichSpout {
     _collector = collector;
     queue = new LinkedBlockingQueue<Status>(1000);
 
-    // Read configuration
-    FileInputStream input = null;
-    try {
-      input = new FileInputStream(new File("config.yml"));
-    } catch(FileNotFoundException fnfe) {
-      System.out.println(fnfe.getMessage());
-    }
-    Yaml yaml = new Yaml();
-    Map<String, String> config = (Map<String, String>) yaml.load(input);
-
     ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-    configurationBuilder.setOAuthConsumerKey(config.get("twitter_oauth_consumer_key"))
-      .setOAuthConsumerSecret(config.get("twitter_oauth_consumer_secret"))
-      .setOAuthAccessToken(config.get("twitter_oauth_access_token"))
-      .setOAuthAccessTokenSecret(config.get("twitter_oauth_access_token_secret"));
+    configurationBuilder.setOAuthConsumerKey(conf.get("twitter_oauth_consumer_key").toString())
+      .setOAuthConsumerSecret(conf.get("twitter_oauth_consumer_secret").toString())
+      .setOAuthAccessToken(conf.get("twitter_oauth_access_token").toString())
+      .setOAuthAccessTokenSecret(conf.get("twitter_oauth_access_token_secret").toString());
     StatusListener listener = new StatusListener() {
       @Override
         public void onStatus(Status status) {
@@ -75,7 +59,7 @@ public class TwitterSpout extends BaseRichSpout {
     TwitterStreamFactory fact = new TwitterStreamFactory(configurationBuilder.build());
     _twitterStream = fact.getInstance();
     _twitterStream.addListener(listener);
-    String keywords[] = { config.get("twitter_keyword") };
+    String keywords[] = { conf.get("twitter_keyword").toString() };
     _twitterStream.filter(new FilterQuery().track(keywords));
   }
 

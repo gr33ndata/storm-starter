@@ -134,7 +134,7 @@
           </descriptorRefs>
           <archive>
             <manifest>
-              <mainClass></mainClass>
+              <mainClass>storm.starter.TweetsLanguages</mainClass>
             </manifest>
           </archive>
         </configuration>

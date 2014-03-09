@@ -1,21 +1,31 @@
 package storm.starter;
 
 import backtype.storm.Config;
+import backtype.storm.LocalCluster;
+import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import backtype.storm.task.ShellBolt;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseBasicBolt;
+import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.topology.BasicOutputCollector;
 import backtype.storm.tuple.Values;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.task.OutputCollector;
 import storm.starter.spout.TwitterSpout;
 import storm.starter.bolt.RedisBolt;
 import storm.starter.util.StormRunner;
 import redis.clients.jedis.Jedis;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.InputStream;
+import java.io.FileNotFoundException;
+import java.io.FileInputStream;
+import java.io.File;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  * This topology identifies tweets' languages using LangId
@@ -39,12 +49,22 @@ public class TweetsLanguages {
     }
   }
 
-  public static class LanguageCount extends BaseBasicBolt {
+  public static class LanguageCount extends BaseRichBolt {
     Map<String, Integer> counts = new HashMap<String, Integer>();
     Map<String, Integer> ids = new HashMap<String, Integer>();
+    String redishost;
+    Integer redisport;
+    OutputCollector collector;
 
     @Override
-    public void execute(Tuple tuple, BasicOutputCollector collector) {
+    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+      this.collector = collector;
+      redishost = conf.get("redis_host").toString();
+      redisport = ((Long) conf.get("redis_port")).intValue();
+    }
+
+    @Override
+    public void execute(Tuple tuple) {
       String id = tuple.getString(0);
       if (ids.get(id) == null) {
         ids.put(id, 1);
@@ -54,7 +74,7 @@ public class TweetsLanguages {
           count = 0;
         count++;
         counts.put(language, count);
-        Jedis jedis = new Jedis("localhost");
+        Jedis jedis = new Jedis(redishost, redisport);
         jedis.set("lang:" + language, String.valueOf(count));
         collector.emit(new Values(language, count));
       }
@@ -75,7 +95,7 @@ public class TweetsLanguages {
 
   public TweetsLanguages() throws InterruptedException {
     builder = new TopologyBuilder();
-    topologyName = "getLanguages";
+    topologyName = "TweetsLanguages";
     topologyConfig = createTopologyConfiguration();
     runtimeInSeconds = DEFAULT_RUNTIME_IN_SECONDS;
 
@@ -85,6 +105,19 @@ public class TweetsLanguages {
   private static Config createTopologyConfiguration() {
     Config conf = new Config();
     conf.setDebug(true);
+
+    // Other configurations come from YAML file
+    FileInputStream input = null;
+    try {
+      input = new FileInputStream(new File("config.yml"));
+    } catch(FileNotFoundException fnfe) {
+      System.out.println(fnfe.getMessage());
+    }
+    Yaml yaml = new Yaml();
+    Map<String, String> config = (Map<String, String>) yaml.load(input);
+    
+    conf.putAll(config);
+    
     return conf;
   }
 
@@ -99,11 +132,21 @@ public class TweetsLanguages {
     builder.setBolt(langcountId, new LanguageCount(), 12).fieldsGrouping(langId, new Fields("language"));
   }
 
-  public void run() throws InterruptedException {
-    StormRunner.runTopologyLocally(builder.createTopology(), topologyName, topologyConfig, runtimeInSeconds);
+  public void run(String mode) throws Exception {
+    if (mode == "local") {
+      StormRunner.runTopologyLocally(builder.createTopology(), topologyName, topologyConfig, runtimeInSeconds);
+    }
+    else if (mode == "cluster") {
+      topologyConfig.setNumWorkers(3);
+      StormSubmitter.submitTopology(topologyName, topologyConfig, builder.createTopology());
+    }
   }
 
   public static void main(String[] args) throws Exception {
-    new TweetsLanguages().run();
+    String mode = (args != null && args.length > 0) ? args[0] : "local";
+    if (mode != "local" && mode != "cluster") {
+      throw new Exception("Parameter mode must be local or cluster");
+    }
+    new TweetsLanguages().run(mode);
   }
 }
