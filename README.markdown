@@ -6,7 +6,7 @@ This is a fork of [storm-starter](http://github.com/nathanmarz/storm-starter) th
 
 In order to run the topology, you'll need Redis and Langid.py, besides the dependencies of the original storm-starter.
 
-First, copy the file `config.yml.example` to `config.yml` and set the Twitter tokens as well as a keyword to search for. Only tweets that match this keyword will be fetched.
+First, copy the file `config.yml.example` to `config.yml` and set the configurations. Pay attention to the "mode" option. If it's "local", the topology will run in "local" mode, if it's "cluster", the topology will run on a cluster.
 
 Then, simply run (once on repository root):
 
