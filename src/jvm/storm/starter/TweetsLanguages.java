@@ -66,15 +66,17 @@ public class TweetsLanguages {
     @Override
     public void execute(Tuple tuple) {
       String id = tuple.getString(0);
-      if (ids.get(id) == null) {
+      Jedis jedis = new Jedis(redishost, redisport);
+      if (ids.get(id) == null || jedis.get("tweet:" + id) == null) {
         ids.put(id, 1);
         String language = tuple.getString(1);
         Integer count = counts.get(language);
-        if (count == null)
-          count = 0;
+        if (count == null) {
+          if (jedis.get("lang:" + language) == null) count = 0;
+          else count = Integer.parseInt(jedis.get("lang:" + language));
+        }
         count++;
         counts.put(language, count);
-        Jedis jedis = new Jedis(redishost, redisport);
         jedis.set("lang:" + language, String.valueOf(count));
         collector.emit(new Values(language, count));
       }
