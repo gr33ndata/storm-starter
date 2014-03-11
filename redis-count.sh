@@ -1,7 +1,7 @@
 #!/bin/bash
 # Helper script to check if data was correcly retrieved
-n=$(redis-cli keys "*" | wc -l)
-nlangs=$(redis-cli keys "lang:*" | wc -l)
+n=$(redis-cli keys "*" | egrep -v 'ERR|empty|^$' | wc -l)
+nlangs=$(redis-cli keys "lang:*" | egrep -v 'ERR|empty|^$' | wc -l)
 ntweets=$((n - nlangs))
 sum=0
 for lang in $(redis-cli keys "lang:*" | sed 's/.*"//g')

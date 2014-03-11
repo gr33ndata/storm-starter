@@ -12,4 +12,8 @@ Then, simply run (once on repository root):
 
 `$ mvn -f m2-pom.xml compile exec:java -Dexec.classpathScope=compile -Dstorm.topology=storm.starter.TweetsLanguages`
 
+Or:
+
+`./run.sh`
+
 After that, you can run the Shell script `redis-count.sh`, which outputs information about the keys stored in your Redis database. The sum of the counts of each language should be the same as the total number of tweets.
