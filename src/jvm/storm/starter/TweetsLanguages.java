@@ -49,6 +49,23 @@ public class TweetsLanguages {
     }
   }
 
+  public static class GetLanguageDysl extends ShellBolt implements IRichBolt {
+
+    public GetLanguageDysl() {
+      super("python", "getlanguage-dysl.py");
+    }
+
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+      declarer.declare(new Fields("id", "language"));
+    }
+
+    @Override
+    public Map<String, Object> getComponentConfiguration() {
+      return null;
+    }
+  }
+
   public static class LanguageCount extends BaseRichBolt {
     Map<String, Integer> counts = new HashMap<String, Integer>();
     Map<String, Integer> ids = new HashMap<String, Integer>();
@@ -126,11 +143,15 @@ public class TweetsLanguages {
   private void wireTopology() throws InterruptedException {
     String spoutId = "twitterStream";
     String langId = "langId";
+    String langDyslId = "langDyslId";
     String redisId = "redis";
+    String redisDyslId = "redisDysl";
     String langcountId = "languageCount";
-    builder.setSpout(spoutId, new TwitterSpout(), 3);
-    builder.setBolt(langId, new GetLanguage(), 5).shuffleGrouping(spoutId);
-    builder.setBolt(redisId, new RedisBolt(), 8).shuffleGrouping(langId);
+    builder.setSpout(spoutId, new TwitterSpout(), 1);
+    builder.setBolt(langId, new GetLanguage(), 2).shuffleGrouping(spoutId);
+    builder.setBolt(langDyslId, new GetLanguageDysl(), 2).shuffleGrouping(spoutId);
+    builder.setBolt(redisId, new RedisBolt(), 2).shuffleGrouping(langId);
+    builder.setBolt(redisDyslId, new RedisBolt(), 2).shuffleGrouping(langDyslId);
     builder.setBolt(langcountId, new LanguageCount(), 12).fieldsGrouping(langId, new Fields("language"));
   }
 
