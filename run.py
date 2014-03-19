@@ -33,11 +33,12 @@ else:
     sys.exit()
 
 # Run Maven and Apache Storm
-proc = sp.Popen(
-    'mvn -e -f m2-pom.xml compile exec:java -Dexec.classpathScope=compile -Dstorm.topology=storm.starter.TweetsLanguages',
-    #stdout=sp.PIPE,  
-    stderr=sp.STDOUT,
-    shell=True)
+#proc = sp.Popen(
+#    'mvn -e -f m2-pom.xml compile exec:java -Dexec.classpathScope=compile -Dstorm.topology=storm.starter.TweetsLanguages',
+#    #stdout=sp.PIPE,  
+#    stderr=sp.STDOUT,
+#    shell=True)
+print 'All is set, now run ./run.sh'
 
 
 
