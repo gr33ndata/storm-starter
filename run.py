@@ -30,6 +30,7 @@ if venv_path.split('/')[-2] == 'venv':
     print 'Virtualenv is activated [OK]'
 else:
     print 'Virtualenv is not activated [Exiting]'
+    print 'Hint: source venv/bin/activate'
     sys.exit()
 
 # Run Maven and Apache Storm

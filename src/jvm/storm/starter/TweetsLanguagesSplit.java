@@ -30,17 +30,17 @@ import org.yaml.snakeyaml.Yaml;
 /**
  * This topology identifies tweets' languages using LangId and Dysl
  */
-public class TweetsLanguages {
+public class TweetsLanguagesSplit {
 
-  public static class GetLanguage extends ShellBolt implements IRichBolt {
+  public static class Segmenter extends ShellBolt implements IRichBolt {
 
-    public GetLanguage() {
-      super("python", "getlanguage.py");
+    public Segmenter() {
+      super("python", "segmenter.py");
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-      declarer.declare(new Fields("id", "language"));
+      declarer.declare(new Fields("id", "sents"));
     }
 
     @Override
@@ -52,7 +52,7 @@ public class TweetsLanguages {
   public static class GetLanguageDysl extends ShellBolt implements IRichBolt {
 
     public GetLanguageDysl() {
-      super("python", "getlanguage-dysl.py");
+      super("python", "getlanguage-dysl-split.py");
     }
 
     @Override
@@ -112,9 +112,9 @@ public class TweetsLanguages {
   private final Config topologyConfig;
   private final int runtimeInSeconds;
 
-  public TweetsLanguages() throws InterruptedException {
+  public TweetsLanguagesSplit() throws InterruptedException {
     builder = new TopologyBuilder();
-    topologyName = "TweetsLanguages";
+    topologyName = "TweetsLanguagesSplit";
     topologyConfig = createTopologyConfiguration();
     runtimeInSeconds = DEFAULT_RUNTIME_IN_SECONDS;
 
@@ -142,15 +142,14 @@ public class TweetsLanguages {
 
   private void wireTopology() throws InterruptedException {
     String spoutId = "twitterStream";
-    String langId = "langId";
+    String segmenter = "segmenter";
     String langDyslId = "langDyslId";
     String redisId = "redis";
     String redisDyslId = "redisDysl";
     String langcountId = "languageCount";
     builder.setSpout(spoutId, new TwitterSpout(), 1);
-    builder.setBolt(langId, new GetLanguage(), 2).shuffleGrouping(spoutId);
-    builder.setBolt(langDyslId, new GetLanguageDysl(), 2).shuffleGrouping(spoutId);
-    builder.setBolt(redisId, new RedisBolt(), 2).shuffleGrouping(langId);
+    builder.setBolt(segmenter, new Segmenter(), 2).shuffleGrouping(spoutId);
+    builder.setBolt(langDyslId, new GetLanguageDysl(), 2).shuffleGrouping(segmenter);
     builder.setBolt(redisDyslId, new RedisBolt(), 2).shuffleGrouping(langDyslId);
     /*builder.setBolt(langcountId, new LanguageCount(), 12).fieldsGrouping(langId, new Fields("language"));*/
   }
@@ -170,6 +169,6 @@ public class TweetsLanguages {
   }
 
   public static void main(String[] args) throws Exception {
-    new TweetsLanguages().run();
+    new TweetsLanguagesSplit().run();
   }
 }
