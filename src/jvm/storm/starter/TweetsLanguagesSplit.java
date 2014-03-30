@@ -144,9 +144,8 @@ public class TweetsLanguagesSplit {
     String spoutId = "twitterStream";
     String segmenter = "segmenter";
     String langDyslId = "langDyslId";
-    String redisId = "redis";
     String redisDyslId = "redisDysl";
-    String langcountId = "languageCount";
+    /*String langcountId = "languageCount";*/
     builder.setSpout(spoutId, new TwitterSpout(), 1);
     builder.setBolt(segmenter, new Segmenter(), 2).shuffleGrouping(spoutId);
     builder.setBolt(langDyslId, new GetLanguageDysl(), 2).shuffleGrouping(segmenter);
